@@ -68,15 +68,17 @@ jobs:
 
       - uses: swatinem/rust-cache@v2
 
-      - name: Install UI dependencies
-        working-directory: ui
-        run: npm install
+      - name: Install UI dependencies & Tauri CLI v2
+        run: |
+          npm --prefix ui install
+          npm install -g @tauri-apps/cli@2
 
       - name: Build Tauri bundles & publish GitHub Release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tauriScript: "tauri"
           tagName: ${{ github.ref_name }}
           releaseName: "SubPrism ${{ github.ref_name }}"
           releaseBody: |
