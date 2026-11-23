@@ -59,15 +59,16 @@ pub fn start_loopback_thread(
 
                 let filter = if let Some(pid_str) = source_id.strip_prefix("pid:") {
                     if let Ok(target_pid) = pid_str.parse::<i32>() {
-                        let apps: Vec<_> = content
+                        let apps: Vec<SCRunningApplication> = content
                             .applications()
                             .into_iter()
                             .filter(|a| a.process_id() == target_pid)
                             .collect();
                         if !apps.is_empty() {
+                            let app_refs: Vec<&SCRunningApplication> = apps.iter().collect();
                             SCContentFilter::create()
                                 .with_display(display)
-                                .with_including_applications(&apps, &[])
+                                .with_including_applications(&app_refs, &[])
                                 .build()
                         } else {
                             SCContentFilter::create()
@@ -88,14 +89,13 @@ pub fn start_loopback_thread(
                         .build()
                 };
 
-                let config = SCStreamConfiguration::builder()
+                let config = SCStreamConfiguration::new()
                     .with_captures_audio(true)
                     .with_excludes_current_process_audio(true)
                     .with_sample_rate(48_000)
                     .with_channel_count(2)
-                    .width(2)
-                    .height(2)
-                    .build();
+                    .with_width(2)
+                    .with_height(2);
 
                 let mut stream = SCStream::new(&filter, &config);
                 let resampler = Arc::new(Mutex::new(MonoResampler16k::new(48_000, 1)));
@@ -106,33 +106,37 @@ pub fn start_loopback_thread(
                         if of_type != SCStreamOutputType::Audio {
                             return;
                         }
-                        let Ok(audio_list) = sample_buffer.audio_buffer_list() else {
+                        let Some(audio_list) = sample_buffer.audio_buffer_list() else {
                             return;
                         };
-                        if audio_list.buffers.is_empty() {
+                        let num_bufs = audio_list.num_buffers();
+                        if num_bufs == 0 {
                             return;
                         }
 
                         let mut mono_samples: Vec<f32> = Vec::new();
-                        let num_bufs = audio_list.buffers.len();
                         if num_bufs == 1 {
-                            let raw = &audio_list.buffers[0].data;
-                            mono_samples.reserve(raw.len() / 4);
-                            for chunk in raw.chunks_exact(4) {
-                                mono_samples.push(f32::from_le_bytes([
-                                    chunk[0], chunk[1], chunk[2], chunk[3],
-                                ]));
-                            }
-                        } else {
-                            let frames = audio_list.buffers[0].data.len() / 4;
-                            mono_samples.resize(frames, 0.0);
-                            for buf in &audio_list.buffers {
-                                for (idx, chunk) in
-                                    buf.data.chunks_exact(4).take(frames).enumerate()
-                                {
-                                    mono_samples[idx] += f32::from_le_bytes([
+                            if let Some(buf) = audio_list.get(0) {
+                                let raw = buf.data();
+                                mono_samples.reserve(raw.len() / 4);
+                                for chunk in raw.chunks_exact(4) {
+                                    mono_samples.push(f32::from_le_bytes([
                                         chunk[0], chunk[1], chunk[2], chunk[3],
-                                    ]) / num_bufs as f32;
+                                    ]));
+                                }
+                            }
+                        } else if let Some(first) = audio_list.get(0) {
+                            let frames = first.data().len() / 4;
+                            mono_samples.resize(frames, 0.0);
+                            for b_idx in 0..num_bufs {
+                                if let Some(buf) = audio_list.get(b_idx) {
+                                    for (idx, chunk) in
+                                        buf.data().chunks_exact(4).take(frames).enumerate()
+                                    {
+                                        mono_samples[idx] += f32::from_le_bytes([
+                                            chunk[0], chunk[1], chunk[2], chunk[3],
+                                        ]) / num_bufs as f32;
+                                    }
                                 }
                             }
                         }
