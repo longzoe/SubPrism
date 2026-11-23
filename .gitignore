@@ -1,0 +1,24 @@
+# Rust build artifacts
+/target
+**/target
+src-tauri/gen/schemas/
+
+# Frontend dependencies & build outputs
+ui/node_modules
+ui/dist
+ui/.vite
+
+# Local dev AI runtimes & model weights (excluded from repo & release builds;
+# end users download and specify paths in Settings)
+local_dev_assets/
+*.gguf
+*.onnx
+*.bin
+*.wav
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

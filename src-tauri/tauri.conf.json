@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SubPrism",
+  "version": "0.1.0",
+  "identifier": "app.subprism.subtitle",
+  "build": {
+    "beforeDevCommand": "npm --prefix ui run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm --prefix ui run build",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "overlay",
+        "title": "SubPrism 实时字幕",
+        "url": "index.html",
+        "width": 940,
+        "height": 138,
+        "minWidth": 460,
+        "minHeight": 86,
+        "maxHeight": 280,
+        "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "visible": true,
+        "center": true
+      },
+      {
+        "label": "settings",
+        "title": "SubPrism 设置与本地 AI 模型",
+        "url": "index.html",
+        "width": 820,
+        "height": 700,
+        "minWidth": 660,
+        "minHeight": 540,
+        "resizable": true,
+        "decorations": true,
+        "transparent": true,
+        "visible": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

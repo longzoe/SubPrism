@@ -1,0 +1,91 @@
+name: CI & Cross-Platform Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Build UI
+        working-directory: ui
+        run: |
+          npm install
+          npm run build
+
+      - name: Run Rust unit tests
+        run: cargo test -p subprism-core -p subprism-audio -p subprism-asr -p subprism-llm
+
+      - name: Check Tauri desktop app compilation
+        run: cargo check -p subprism
+
+  release:
+    name: Build Release (${{ matrix.platform }})
+    needs: check-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm install
+
+      - name: Build Tauri bundles & publish GitHub Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "SubPrism ${{ github.ref_name }}"
+          releaseBody: |
+            ## SubPrism ${{ github.ref_name }}
+
+            Cross-platform local AI real-time video subtitle translator in Rust + Tauri v2, featuring a Liquid Glass overlay and automatic `llama.cpp` (`Spark-X2.5-4B`) orchestration.
+
+            ### Model Setup (Bring Your Own Local Models)
+            Please download `llama-server` (`>= b10833`), `Spark-X2.5-4B` GGUF, `sherpa-onnx` v2.0.3 shared library, `SenseVoice-Small`, and `silero_vad_v5.onnx`, then configure their paths in **Settings → 本地模型与引擎**. See [README](https://github.com/longzoe/SubPrism#readme) for direct links.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

@@ -1,0 +1,412 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: "SF Pro Display", "PingFang SC", "Segoe UI Variable Display", "Microsoft YaHei UI",
+    system-ui, -apple-system, sans-serif;
+  --accent-cyan: #5eead4;
+  --accent-sky: #60a5fa;
+  --accent-indigo: #818cf8;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* =========================================================================
+   LIQUID GLASS SUBTITLE BAR (Overlay Window)
+   ========================================================================= */
+
+.overlay-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--glass-radius, 14px);
+  transition:
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.overlay-shell[data-platform="macos"] {
+  --glass-radius: 28px;
+}
+
+.overlay-shell[data-platform="windows"] {
+  --glass-radius: 10px;
+}
+
+/* Theme 1: Smoked Dark Liquid Glass (High contrast cinema default) */
+.overlay-shell[data-theme="smoked_dark"] {
+  color-scheme: only dark;
+  color: #f8fafc;
+  accent-color: #60a5fa;
+  background:
+    radial-gradient(
+      340px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(147, 197, 253, 0.16),
+      transparent 62%
+    ),
+    linear-gradient(
+      142deg,
+      rgba(255, 255, 255, 0.13) 0%,
+      rgba(255, 255, 255, 0.03) 38%,
+      rgba(96, 165, 250, 0.07) 100%
+    ),
+    rgba(11, 14, 22, var(--glass-opacity, 0.46));
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0.5px rgba(255, 255, 255, 0.1),
+    inset 0 0 28px rgba(125, 211, 252, 0.06);
+}
+
+/* Theme 2: Crystal Light Liquid Glass (Translucent Apple frost aesthetic) */
+.overlay-shell[data-theme="crystal_light"] {
+  color-scheme: only light;
+  color: #0b1220;
+  accent-color: #2563eb;
+  background:
+    radial-gradient(
+      320px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(255, 255, 255, 0.52),
+      transparent 60%
+    ),
+    linear-gradient(
+      140deg,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(241, 245, 255, 0.34) 48%,
+      rgba(219, 234, 254, 0.36) 100%
+    ),
+    rgba(248, 250, 252, var(--glass-opacity, 0.44));
+  backdrop-filter: blur(28px) saturate(210%);
+  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -1px 1px rgba(148, 163, 184, 0.24),
+    inset 0 0 22px rgba(255, 255, 255, 0.35);
+}
+
+/* Theme 3: Minimal Floating Subtitles (Zero glass container, crisp edge glow) */
+.overlay-shell[data-theme="minimal_text"] {
+  color: #ffffff;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+/* Prismatic top liquid specular filament */
+.liquid-specular-rim {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 6%,
+    rgba(255, 255, 255, 0.55) 28%,
+    rgba(186, 230, 253, 0.65) 50%,
+    rgba(255, 255, 255, 0.55) 72%,
+    transparent 94%
+  );
+  mask: linear-gradient(#000 0 0) top / 100% 1.5px no-repeat;
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 1.5px no-repeat;
+  opacity: 0.72;
+}
+
+.overlay-shell[data-theme="minimal_text"] .liquid-specular-rim {
+  opacity: 0;
+}
+
+/* Hover-revealed Liquid Glass Floating Toolbar (WCAG toolbar + discrete animation) */
+.floating-toolbar {
+  position: absolute;
+  top: 7px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 20;
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    display,
+    opacity 0.2s ease-out,
+    translate 0.2s ease-out;
+  transition-behavior: allow-discrete;
+}
+
+@starting-style {
+  .floating-toolbar {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+
+.floating-toolbar[hidden] {
+  display: none;
+  opacity: 0;
+  translate: 0 -6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-toolbar {
+    translate: none;
+    transition-duration: 0.1s;
+  }
+
+  @starting-style {
+    .floating-toolbar {
+      translate: none;
+    }
+  }
+
+  .floating-toolbar[hidden] {
+    translate: none;
+  }
+}
+
+.toolbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.54);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.overlay-shell[data-theme="crystal_light"] .toolbar-pill {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-inline-size: 26px;
+  min-block-size: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toolbar-btn {
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+}
+
+@media (hover: hover) {
+  .toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .overlay-shell[data-theme="crystal_light"] .toolbar-btn:hover {
+    background: rgba(15, 23, 42, 0.08);
+  }
+}
+
+.toolbar-btn:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.toolbar-btn[aria-pressed="true"] {
+  background: rgba(56, 189, 248, 0.24);
+  border-color: rgba(125, 211, 252, 0.55);
+  color: #e0f2fe;
+}
+
+.overlay-shell[data-theme="crystal_light"] .toolbar-btn[aria-pressed="true"] {
+  background: rgba(37, 99, 235, 0.16);
+  border-color: rgba(37, 99, 235, 0.45);
+  color: #1d4ed8;
+}
+
+.toolbar-sep {
+  display: inline-block;
+  inline-size: 1px;
+  block-size: 14px;
+  margin: 0 2px;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.overlay-shell[data-theme="crystal_light"] .toolbar-sep {
+  border-inline-start-color: rgba(15, 23, 42, 0.16);
+}
+
+/* Subtitle Line Entry Animation (@starting-style compositor-only) */
+.subtitle-block {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@starting-style {
+  .subtitle-block {
+    opacity: 0;
+    translate: 0 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subtitle-block {
+    translate: none;
+    transition-duration: 0.08s;
+  }
+  @starting-style {
+    .subtitle-block {
+      translate: none;
+    }
+  }
+}
+
+.subtitle-translated-dark {
+  color: #f8fafc;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.72),
+    0 3px 14px rgba(0, 0, 0, 0.45);
+}
+
+.subtitle-translated-minimal {
+  color: #ffffff;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.92),
+    0 4px 16px rgba(0, 0, 0, 0.75);
+}
+
+.subtitle-translated-light {
+  color: #0b1220;
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.65);
+}
+
+.subtitle-source-dark {
+  color: rgba(226, 232, 240, 0.72);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+}
+
+.subtitle-source-light {
+  color: rgba(30, 41, 59, 0.72);
+}
+
+/* Ambient live voice pulse dot */
+.status-dot-live {
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.85);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-dot-live {
+    animation: gentle-pulse 2.2s ease-in-out infinite;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.86);
+  }
+}
+
+/* =========================================================================
+   SETTINGS GLASS SURFACE (Settings Window)
+   ========================================================================= */
+
+.settings-root {
+  color-scheme: only dark;
+  color: #e2e8f0;
+  accent-color: #38bdf8;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(600px circle at 12% 0%, rgba(56, 189, 248, 0.14), transparent 55%),
+    radial-gradient(500px circle at 92% 100%, rgba(129, 140, 248, 0.14), transparent 55%),
+    rgba(10, 13, 21, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  overflow: hidden;
+  user-select: text;
+}
+
+.glass-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.065) 0%,
+    rgba(255, 255, 255, 0.025) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+}
+
+.glass-input {
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-size: 13px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.glass-input:focus {
+  border-color: rgba(56, 189, 248, 0.72);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+/* Slim dark scrollbar for Settings scroll containers */
+.glass-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.glass-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.glass-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.glass-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}

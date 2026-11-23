@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>SubPrism 需要“录屏与系统录音”权限，仅用于实时采集电脑内播视频的系统音频并进行本地 AI 离线字幕翻译，不会录制或上传屏幕画面。</string>
+</dict>
+</plist>
