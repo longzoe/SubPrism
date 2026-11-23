@@ -92,8 +92,8 @@ pub fn start_loopback_thread(
                 let config = SCStreamConfiguration::new()
                     .with_captures_audio(true)
                     .with_excludes_current_process_audio(true)
-                    .with_sample_rate(48_000)
-                    .with_channel_count(2)
+                    .with_sample_rate(48_000_i32)
+                    .with_channel_count(2_i32)
                     .with_width(2)
                     .with_height(2);
 

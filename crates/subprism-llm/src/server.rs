@@ -8,7 +8,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tracing::{debug, info, warn};
+#[cfg(target_os = "windows")]
+use tracing::warn;
+use tracing::{debug, info};
 use subprism_core::{detect_hardware, GpuBackend, LlmConfig, ModelPaths};
 
 #[derive(Debug, Clone)]
