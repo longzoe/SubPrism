@@ -536,26 +536,50 @@ export const SettingsPanel: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                    <span className="text-[11px] text-slate-400">
+                      看日剧/番剧推荐直接选「日本語 (ja)」，轻声耳语识别率显著高于自动检测
+                    </span>
                   </label>
 
-                  <label className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3.5 py-2.5 text-xs cursor-pointer">
-                    <div>
-                      <div className="text-slate-200 font-medium">说话中实时草稿翻译</div>
-                      <div className="text-slate-400 text-[11px]">
-                        未停顿前每 ~500ms 预览译文，延迟更低
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3.5 py-2 text-xs cursor-pointer">
+                      <div>
+                        <div className="text-slate-200 font-medium">轻声台词自动增益（AGC）</div>
+                        <div className="text-slate-400 text-[11px]">
+                          自动抬升剧中人物轻声/耳语，不放大纯静音
+                        </div>
                       </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={config.llm.translatePartials}
-                      onChange={(e) =>
-                        persist({
-                          ...config,
-                          llm: { ...config.llm, translatePartials: e.target.checked },
-                        })
-                      }
-                    />
-                  </label>
+                      <input
+                        type="checkbox"
+                        checked={config.asr.softSpeechBoost ?? true}
+                        onChange={(e) =>
+                          persist({
+                            ...config,
+                            asr: { ...config.asr, softSpeechBoost: e.target.checked },
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between gap-3 rounded-xl bg-white/5 px-3.5 py-2 text-xs cursor-pointer">
+                      <div>
+                        <div className="text-slate-200 font-medium">说话中实时草稿翻译</div>
+                        <div className="text-slate-400 text-[11px]">
+                          未停顿前每 ~500ms 预览译文，延迟更低
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={config.llm.translatePartials}
+                        onChange={(e) =>
+                          persist({
+                            ...config,
+                            llm: { ...config.llm, translatePartials: e.target.checked },
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Style presets */}
@@ -639,21 +663,41 @@ export const SettingsPanel: React.FC = () => {
                   <Sliders className="w-4 h-4 text-sky-400" />
                   <span>推理与切句参数 + 内置 Spark-X2.5-4B 提示词预览</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                   <label className="space-y-1">
-                    <span className="text-slate-400">
-                      GPU 卸载层数: {config.llm.gpuLayers}
+                    <span className="text-slate-300">
+                      VAD 灵敏度阈值: {config.asr.vadThreshold.toFixed(2)}（越低越抓轻声）
+                    </span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={0.7}
+                      step={0.02}
+                      className="w-full"
+                      value={config.asr.vadThreshold}
+                      onChange={(e) =>
+                        persist({
+                          ...config,
+                          asr: { ...config.asr, vadThreshold: Number(e.target.value) },
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-slate-300">
+                      轻声自动增益上限: +{Math.round(config.asr.agcMaxGainDb ?? 18)} dB
                     </span>
                     <input
                       type="range"
                       min={0}
-                      max={99}
+                      max={24}
+                      step={2}
                       className="w-full"
-                      value={config.llm.gpuLayers}
+                      value={config.asr.agcMaxGainDb ?? 18}
                       onChange={(e) =>
                         persist({
                           ...config,
-                          llm: { ...config.llm, gpuLayers: Number(e.target.value) },
+                          asr: { ...config.asr, agcMaxGainDb: Number(e.target.value) },
                         })
                       }
                     />
@@ -673,6 +717,24 @@ export const SettingsPanel: React.FC = () => {
                         persist({
                           ...config,
                           asr: { ...config.asr, minSilenceMs: Number(e.target.value) },
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-slate-400">
+                      GPU 卸载层数: {config.llm.gpuLayers}
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={99}
+                      className="w-full"
+                      value={config.llm.gpuLayers}
+                      onChange={(e) =>
+                        persist({
+                          ...config,
+                          llm: { ...config.llm, gpuLayers: Number(e.target.value) },
                         })
                       }
                     />

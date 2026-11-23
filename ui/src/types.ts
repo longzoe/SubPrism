@@ -41,6 +41,8 @@ export interface AsrConfig {
   minSilenceMs: number;
   maxUtteranceMs: number;
   partialIntervalMs: number;
+  softSpeechBoost: boolean;
+  agcMaxGainDb: number;
 }
 
 export interface AppearanceConfig {

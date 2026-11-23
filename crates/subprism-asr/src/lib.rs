@@ -1,6 +1,8 @@
+pub mod gain;
 pub mod sherpa_ffi;
 
 use anyhow::{anyhow, Result};
+use gain::{normalize_segment_for_asr, StreamingAgc};
 use sherpa_ffi::{OpaqueRecognizer, OpaqueVad, SherpaApi};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -43,6 +45,9 @@ pub struct AsrEngine {
     api: Arc<SherpaApi>,
     recognizer: *const OpaqueRecognizer,
     vad: *const OpaqueVad,
+    agc: StreamingAgc,
+    soft_speech_boost: bool,
+    agc_max_gain_db: f32,
     vad_pending: Vec<f32>,
     live_speech: Vec<f32>,
     current_utterance_id: String,
@@ -96,6 +101,9 @@ impl AsrEngine {
             api,
             recognizer,
             vad,
+            agc: StreamingAgc::new(asr_cfg.soft_speech_boost, asr_cfg.agc_max_gain_db),
+            soft_speech_boost: asr_cfg.soft_speech_boost,
+            agc_max_gain_db: asr_cfg.agc_max_gain_db,
             vad_pending: Vec::with_capacity(2048),
             live_speech: Vec::with_capacity(SAMPLE_RATE * 10),
             current_utterance_id: Uuid::new_v4().to_string(),
@@ -110,7 +118,9 @@ impl AsrEngine {
     /// Direct offline transcription of a 16 kHz mono f32 buffer (useful for WAV testing & batch decoding).
     pub fn transcribe_samples(&self, samples_16k: &[f32]) -> Result<AsrOutput> {
         let start = Instant::now();
-        let (raw_text, raw_lang) = self.api.decode_offline(self.recognizer, samples_16k)?;
+        let leveled =
+            normalize_segment_for_asr(samples_16k, self.soft_speech_boost, self.agc_max_gain_db);
+        let (raw_text, raw_lang) = self.api.decode_offline(self.recognizer, &leveled)?;
         let latency_ms = start.elapsed().as_millis() as u64;
         let text = sanitize_transcript(&raw_text);
         let lang = normalize_lang(&raw_lang);
@@ -129,7 +139,8 @@ impl AsrEngine {
         let mut speaking_now = false;
 
         while self.vad_pending.len() >= VAD_WINDOW_SAMPLES {
-            let window: Vec<f32> = self.vad_pending.drain(0..VAD_WINDOW_SAMPLES).collect();
+            let mut window: Vec<f32> = self.vad_pending.drain(0..VAD_WINDOW_SAMPLES).collect();
+            self.agc.process_frame(&mut window);
             self.api.vad_accept_waveform(self.vad, &window);
             speaking_now = self.api.vad_is_detected(self.vad);
 

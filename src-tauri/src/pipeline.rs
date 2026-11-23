@@ -80,6 +80,15 @@ impl PipelineController {
         let target_changed = prev.target_language != new_cfg.target_language
             || prev.style_preset != new_cfg.style_preset;
 
+        let asr_or_audio_changed = prev.audio_source_id != new_cfg.audio_source_id
+            || prev.asr.source_language != new_cfg.asr.source_language
+            || (prev.asr.vad_threshold - new_cfg.asr.vad_threshold).abs() > 0.001
+            || prev.asr.min_silence_ms != new_cfg.asr.min_silence_ms
+            || prev.asr.soft_speech_boost != new_cfg.asr.soft_speech_boost
+            || (prev.asr.agc_max_gain_db - new_cfg.asr.agc_max_gain_db).abs() > 0.1
+            || prev.paths.asr_model_dir != new_cfg.paths.asr_model_dir
+            || prev.paths.vad_model_path != new_cfg.paths.vad_model_path;
+
         new_cfg.save()?;
         *self.config.write().await = new_cfg.clone();
 
@@ -94,9 +103,14 @@ impl PipelineController {
             self.shutdown_llm().await;
         }
 
-        // Update Idle / NeedsSetup phase if not currently running
+        // Update Idle / NeedsSetup phase, or hot-reload ASR if listening with changed VAD/AGC settings
         let is_running = self.session.lock().await.is_some();
-        if !is_running {
+        if is_running && asr_or_audio_changed {
+            self.stop_listening().await;
+            if let Err(e) = self.start_listening().await {
+                warn!("热重载 ASR/音频采集失败: {e:#}");
+            }
+        } else if !is_running {
             if new_cfg.paths.is_complete() {
                 self.set_status(|s| {
                     s.phase = EnginePhase::Idle;
@@ -334,7 +348,7 @@ impl PipelineController {
                             },
                         );
 
-                        if !live_cfg.llm.translate_partials || text.chars().count() < 4 {
+                        if !live_cfg.llm.translate_partials || text.chars().count() < 2 {
                             continue;
                         }
 

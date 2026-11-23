@@ -199,6 +199,20 @@ pub struct AsrConfig {
     pub min_silence_ms: u32,
     pub max_utterance_ms: u32,
     pub partial_interval_ms: u32,
+    /// Automatically boosts whispered / low-volume dialogue before VAD & ASR
+    #[serde(default = "default_true")]
+    pub soft_speech_boost: bool,
+    /// Maximum automatic gain in dB (0..=24 dB) for quiet characters
+    #[serde(default = "default_agc_max_gain_db")]
+    pub agc_max_gain_db: f32,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_agc_max_gain_db() -> f32 {
+    18.0
 }
 
 impl Default for AsrConfig {
@@ -206,10 +220,12 @@ impl Default for AsrConfig {
         Self {
             source_language: "auto".to_string(),
             num_threads: 4,
-            vad_threshold: 0.45,
-            min_silence_ms: 480,
+            vad_threshold: 0.26,
+            min_silence_ms: 460,
             max_utterance_ms: 7500,
-            partial_interval_ms: 520,
+            partial_interval_ms: 500,
+            soft_speech_boost: true,
+            agc_max_gain_db: 18.0,
         }
     }
 }

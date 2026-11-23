@@ -536,9 +536,9 @@ impl SherpaApi {
 
         let mut cfg: SherpaOnnxVadModelConfig = unsafe { std::mem::zeroed() };
         cfg.silero_vad.model = c_model.as_ptr();
-        cfg.silero_vad.threshold = threshold.clamp(0.1, 0.95);
+        cfg.silero_vad.threshold = threshold.clamp(0.08, 0.95);
         cfg.silero_vad.min_silence_duration = min_silence_sec.clamp(0.15, 2.5);
-        cfg.silero_vad.min_speech_duration = 0.22;
+        cfg.silero_vad.min_speech_duration = 0.12;
         cfg.silero_vad.window_size = 512;
         cfg.silero_vad.max_speech_duration = max_speech_sec.clamp(2.5, 20.0);
         cfg.sample_rate = 16_000;
